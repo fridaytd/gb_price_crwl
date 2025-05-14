@@ -203,7 +203,7 @@ class ColSheetModel(BaseModel):
                         worksheet.batch_update(
                             [
                                 {
-                                    "range": f"{COL_META}{index}",
+                                    "range": f"{metadata[COL_META]}{index}",
                                     "values": [[messages]],
                                 }
                             ]
@@ -324,6 +324,7 @@ class RowRun(ColSheetModel):
     ]
 
     @staticmethod
+    @retry_on_fail(max_retries=5, sleep_interval=10)
     def get_run_indexes(sheet_id: str, sheet_name: str, col_index: int) -> list[int]:
         sheet = RowRun.get_worksheet(sheet_id=sheet_id, sheet_name=sheet_name)
         run_indexes = []

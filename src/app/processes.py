@@ -1,10 +1,14 @@
 from datetime import datetime
 
+from pydantic import ValidationError
+
 from app import config
 
 from .gameboost.crwl import extract_page_data
 from .gameboost.models import Offer, PageData
 from .sheet.models import RowRun
+from . import logger
+from .shared.decorators import retry_on_fail
 
 
 def platten_offer(page_data: PageData) -> list[Offer]:
@@ -113,42 +117,71 @@ def last_update_message(
     return formatted_date
 
 
-def run(sb, index: int):
-    run_row = RowRun.get(
-        sheet_id=config.SPREADSHEET_KEY, sheet_name=config.SHEET_NAME, index=index
-    )
+@retry_on_fail(max_retries=3, sleep_interval=1)
+def run(sb, index: int) -> None:
+    try:
+        logger.info(f"Processing row: {index}")
+        run_row = RowRun.get(
+            sheet_id=config.SPREADSHEET_KEY, sheet_name=config.SHEET_NAME, index=index
+        )
 
-    page_data = extract_page_data(sb, run_row.PRODUCT_COMPARE)
+        page_data = extract_page_data(sb, run_row.PRODUCT_COMPARE)
 
-    offers = platten_offer(page_data)
+        offers = platten_offer(page_data)
 
-    valid_offers, my_offer = filter_offers_and_our_offer(offers, run_row)
+        valid_offers, my_offer = filter_offers_and_our_offer(offers, run_row)
 
-    run_row.Note = ""
+        run_row.Note = ""
 
-    if len(valid_offers) > 0:
-        min_offer = find_min_valid_offer(valid_offers)
-        run_row.SELLER = min_offer.seller.username
-        run_row.LOWEST_PRICE_EUR = str(min_offer.price.amount)
-        run_row.LOWEST_PRICE_USD = str(min_offer.local_price.amount)
+        if len(valid_offers) > 0:
+            min_offer = find_min_valid_offer(valid_offers)
+            logger.info(f"Min offer: {min_offer}")
+            run_row.SELLER = min_offer.seller.username
+            run_row.LOWEST_PRICE_EUR = str(min_offer.price.amount)
+            run_row.LOWEST_PRICE_USD = str(min_offer.local_price.amount)
 
-    else:
-        run_row.SELLER = ""
-        run_row.LOWEST_PRICE_EUR = ""
-        run_row.LOWEST_PRICE_USD = ""
-        run_row.Note = run_row.Note + "Không có seller hợp lệ \n"
+        else:
+            logger.info("No valid offer")
+            run_row.SELLER = ""
+            run_row.LOWEST_PRICE_EUR = ""
+            run_row.LOWEST_PRICE_USD = ""
+            run_row.Note = run_row.Note + "Không có seller hợp lệ \n"
 
-    if my_offer:
-        my_top = find_my_offer_top(offers)
-        run_row.Top = str(my_top)
-        run_row.CNLGAMING_EUR = str(my_offer.local_price.amount)
-        run_row.CNLGAMING_USD = str(my_offer.price.amount)
+        if my_offer:
+            my_top = find_my_offer_top(offers)
+            logger.info(f"My offer at top {my_top}")
+            run_row.Top = str(my_top)
+            run_row.CNLGAMING_EUR = str(my_offer.local_price.amount)
+            run_row.CNLGAMING_USD = str(my_offer.price.amount)
 
-    else:
-        run_row.Top = "NaN"
-        run_row.CNLGAMING_EUR = ""
-        run_row.CNLGAMING_USD = ""
-        run_row.Note = run_row.Note + f"Không tìm thấy seller {config.OUR_SELLER_NAME}"
+        else:
+            logger.info("Can't find my offer")
+            run_row.Top = "NaN"
+            run_row.CNLGAMING_EUR = ""
+            run_row.CNLGAMING_USD = ""
+            run_row.Note = (
+                run_row.Note + f"Không tìm thấy seller {config.OUR_SELLER_NAME}"
+            )
 
-    run_row.Time_update = last_update_message(datetime.now())
-    run_row.update()
+        run_row.Time_update = last_update_message(datetime.now())
+        run_row.update()
+
+    except ValidationError as e:
+        logger.exception(f"VALIDATION ERROR AT ROW: {index}")
+        logger.exception(e.errors())
+        RowRun.update_note_message(
+            sheet_id=config.SPREADSHEET_KEY,
+            sheet_name=config.SHEET_NAME,
+            index=index,
+            messages=f"{last_update_message(datetime.now())} VALIDATION ERROR AT ROW: {index}",
+        )
+
+    except Exception as e:
+        logger.exception(f"FAILED AT ROW: {index}")
+        logger.exception(e)
+        RowRun.update_note_message(
+            sheet_id=config.SPREADSHEET_KEY,
+            sheet_name=config.SHEET_NAME,
+            index=index,
+            messages=f"{last_update_message(datetime.now())} FAILED AT ROW: {index}",
+        )
