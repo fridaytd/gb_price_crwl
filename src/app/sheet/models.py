@@ -186,19 +186,24 @@ class RowRun(ColSheetModel):
     CHECK: Annotated[str, {COL_META: "A"}]
     PRODUCT_NAME: Annotated[str, {COL_META: "B"}]
     PRODUCT_COMPARE: Annotated[str, {COL_META: "C"}]
-    LOWEST_PRICE: Annotated[str | None, {COL_META: "D", IS_UPDATE_META: True}] = None
-    SELLER: Annotated[str | None, {COL_META: "E", IS_UPDATE_META: True}] = None
-    Time_update: Annotated[str | None, {COL_META: "F", IS_UPDATE_META: True}] = None
-    Note: Annotated[str | None, {COL_META: "G", IS_UPDATE_META: True}] = None
-    Top: Annotated[str | None, {COL_META: "H", IS_UPDATE_META: True}] = None
-    CNLGAMING_USD: Annotated[float | None, {COL_META: "I", IS_UPDATE_META: True}] = None
-    CNLGAMING_EUR: Annotated[float | None, {COL_META: "J", IS_UPDATE_META: True}] = None
-    FEEDBACK_QTY: Annotated[int, {COL_META: "K"}]
-    FEEDBACK_PERCENT: Annotated[float, {COL_META: "L"}]
-    DELIVERY_TIME: Annotated[int, {COL_META: "M"}]
-    MIN_QTY: Annotated[int, {COL_META: "N"}]
-    STOCK1: Annotated[int, {COL_META: "O"}]
-    BLACKLIST_RANGE: Annotated[str, {COL_META: "P"}]
+    LOWEST_PRICE_USD: Annotated[str | None, {COL_META: "D", IS_UPDATE_META: True}] = (
+        None
+    )
+    LOWEST_PRICE_EUR: Annotated[str | None, {COL_META: "E", IS_UPDATE_META: True}] = (
+        None
+    )
+    SELLER: Annotated[str | None, {COL_META: "F", IS_UPDATE_META: True}] = None
+    Time_update: Annotated[str | None, {COL_META: "G", IS_UPDATE_META: True}] = None
+    Note: Annotated[str | None, {COL_META: "H", IS_UPDATE_META: True}] = None
+    Top: Annotated[str | None, {COL_META: "I", IS_UPDATE_META: True}] = None
+    CNLGAMING_USD: Annotated[float | None, {COL_META: "J", IS_UPDATE_META: True}] = None
+    CNLGAMING_EUR: Annotated[float | None, {COL_META: "K", IS_UPDATE_META: True}] = None
+    FEEDBACK_QTY: Annotated[int, {COL_META: "L"}]
+    FEEDBACK_PERCENT: Annotated[float, {COL_META: "M"}]
+    DELIVERY_TIME: Annotated[int, {COL_META: "N"}]
+    MIN_QTY: Annotated[int, {COL_META: "O"}]
+    STOCK1: Annotated[int, {COL_META: "P"}]
+    BLACKLIST_RANGE: Annotated[str, {COL_META: "Q"}]
 
     @staticmethod
     def get_run_indexes(sheet_id: str, sheet_name: str, col_index: int) -> list[int]:
