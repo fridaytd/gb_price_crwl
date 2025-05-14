@@ -1,19 +1,20 @@
+from typing import Annotated, Final, Self
+
 from gspread import service_account
-from pydantic import BaseModel, ConfigDict
-from typing import Annotated, Self, Final
 from gspread.worksheet import Worksheet
+from pydantic import BaseModel, ConfigDict
 
 from app import config
 from app.paths import ROOT_PATH
 
-from .g_sheet import gsheet_client
-from ..decorators import retry_on_fail
+from ..shared.decorators import retry_on_fail
 from .enums import CheckType
 from .exceptions import SheetError
-
+from .g_sheet import gsheet_client
 
 COL_META: Final[str] = "col_name_xxx"
-IS_UPDATE_META: Final[str] = "is_update"
+IS_UPDATE_META: Final[str] = "is_update_xxx"
+IS_NOTE_META: Final[str] = "is_note_xxx"
 
 
 class ColSheetModel(BaseModel):
@@ -181,29 +182,146 @@ class ColSheetModel(BaseModel):
 
         worksheet.batch_update(update_batch)
 
+    @classmethod
+    @retry_on_fail(max_retries=5, sleep_interval=30)
+    def update_note_message(
+        cls,
+        sheet_id: str,
+        sheet_name: str,
+        index: int,
+        messages: str,
+    ):
+        for field_name, field_info in cls.model_fields.items():
+            if hasattr(field_info, "metadata"):
+                for metadata in field_info.metadata:
+                    if COL_META in metadata and IS_NOTE_META in metadata:
+                        worksheet = cls.get_worksheet(
+                            sheet_id=sheet_id,
+                            sheet_name=sheet_name,
+                        )
+
+                        worksheet.batch_update(
+                            [
+                                {
+                                    "range": f"{COL_META}{index}",
+                                    "values": [[messages]],
+                                }
+                            ]
+                        )
+
 
 class RowRun(ColSheetModel):
-    CHECK: Annotated[str, {COL_META: "A"}]
-    PRODUCT_NAME: Annotated[str, {COL_META: "B"}]
-    PRODUCT_COMPARE: Annotated[str, {COL_META: "C"}]
-    LOWEST_PRICE_USD: Annotated[str | None, {COL_META: "D", IS_UPDATE_META: True}] = (
-        None
-    )
-    LOWEST_PRICE_EUR: Annotated[str | None, {COL_META: "E", IS_UPDATE_META: True}] = (
-        None
-    )
-    SELLER: Annotated[str | None, {COL_META: "F", IS_UPDATE_META: True}] = None
-    Time_update: Annotated[str | None, {COL_META: "G", IS_UPDATE_META: True}] = None
-    Note: Annotated[str | None, {COL_META: "H", IS_UPDATE_META: True}] = None
-    Top: Annotated[str | None, {COL_META: "I", IS_UPDATE_META: True}] = None
-    CNLGAMING_USD: Annotated[float | None, {COL_META: "J", IS_UPDATE_META: True}] = None
-    CNLGAMING_EUR: Annotated[float | None, {COL_META: "K", IS_UPDATE_META: True}] = None
-    FEEDBACK_QTY: Annotated[int, {COL_META: "L"}]
-    FEEDBACK_PERCENT: Annotated[float, {COL_META: "M"}]
-    DELIVERY_TIME: Annotated[int, {COL_META: "N"}]
-    MIN_QTY: Annotated[int, {COL_META: "O"}]
-    STOCK1: Annotated[int, {COL_META: "P"}]
-    BLACKLIST_RANGE: Annotated[str, {COL_META: "Q"}]
+    CHECK: Annotated[
+        str,
+        {
+            COL_META: "A",
+        },
+    ]
+    PRODUCT_NAME: Annotated[
+        str,
+        {
+            COL_META: "B",
+        },
+    ]
+    PRODUCT_COMPARE: Annotated[
+        str,
+        {
+            COL_META: "C",
+        },
+    ]
+    LOWEST_PRICE_USD: Annotated[
+        str | None,
+        {
+            COL_META: "D",
+            IS_UPDATE_META: True,
+        },
+    ] = None
+    LOWEST_PRICE_EUR: Annotated[
+        str | None,
+        {
+            COL_META: "E",
+            IS_UPDATE_META: True,
+        },
+    ] = None
+    SELLER: Annotated[
+        str | None,
+        {
+            COL_META: "F",
+            IS_UPDATE_META: True,
+        },
+    ] = None
+    Time_update: Annotated[
+        str | None,
+        {
+            COL_META: "G",
+            IS_UPDATE_META: True,
+        },
+    ] = None
+    Note: Annotated[
+        str | None,
+        {
+            COL_META: "H",
+            IS_UPDATE_META: True,
+            IS_NOTE_META: True,
+        },
+    ] = None
+    Top: Annotated[
+        str | None,
+        {
+            COL_META: "I",
+            IS_UPDATE_META: True,
+        },
+    ] = None
+    CNLGAMING_USD: Annotated[
+        str | None,
+        {
+            COL_META: "J",
+            IS_UPDATE_META: True,
+        },
+    ] = None
+    CNLGAMING_EUR: Annotated[
+        str | None,
+        {
+            COL_META: "K",
+            IS_UPDATE_META: True,
+        },
+    ] = None
+    FEEDBACK_QTY: Annotated[
+        int,
+        {
+            COL_META: "L",
+        },
+    ]
+    FEEDBACK_PERCENT: Annotated[
+        float,
+        {
+            COL_META: "M",
+        },
+    ]
+    DELIVERY_TIME: Annotated[
+        int,
+        {
+            COL_META: "N",
+        },
+    ]
+    MIN_QTY: Annotated[
+        int,
+        {
+            COL_META: "O",
+        },
+    ]
+    STOCK1: Annotated[
+        int,
+        {
+            COL_META: "P",
+        },
+    ]
+    BLACKLIST_RANGE: Annotated[
+        str,
+        {
+            COL_META: "Q",
+        },
+    ]
 
     @staticmethod
     def get_run_indexes(sheet_id: str, sheet_name: str, col_index: int) -> list[int]:

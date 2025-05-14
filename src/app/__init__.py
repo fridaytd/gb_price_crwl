@@ -3,14 +3,15 @@ import logging
 from ._config import Config
 
 ## Seting logger
-logger = logging.getLogger(name=__name__)
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-formater = logging.Formatter(
-    fmt="%(asctime)s - %(name)s - %(levelname)s :: %(message)s"
+# Configure logging once at the application level
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s :: %(message)s",
+    handlers=[logging.StreamHandler()],
 )
-handler.setFormatter(formater)
-logger.addHandler(handler)
+
+# Get logger for this module
+logger = logging.getLogger(__name__)
 
 
 config = Config.from_env()

@@ -1,8 +1,10 @@
 from datetime import datetime
+
 from app import config
-from .sheet.models import RowRun
+
 from .gameboost.crwl import extract_page_data
-from .gameboost.models import PageData, Offer
+from .gameboost.models import Offer, PageData
+from .sheet.models import RowRun
 
 
 def platten_offer(page_data: PageData) -> list[Offer]:
@@ -139,13 +141,13 @@ def run(sb, index: int):
     if my_offer:
         my_top = find_my_offer_top(offers)
         run_row.Top = str(my_top)
-        run_row.CNLGAMING_EUR = my_offer.local_price.amount
-        run_row.CNLGAMING_USD = my_offer.price.amount
+        run_row.CNLGAMING_EUR = str(my_offer.local_price.amount)
+        run_row.CNLGAMING_USD = str(my_offer.price.amount)
 
     else:
         run_row.Top = "NaN"
-        run_row.CNLGAMING_EUR = 0
-        run_row.CNLGAMING_USD = 0
+        run_row.CNLGAMING_EUR = ""
+        run_row.CNLGAMING_USD = ""
         run_row.Note = run_row.Note + f"Không tìm thấy seller {config.OUR_SELLER_NAME}"
 
     run_row.Time_update = last_update_message(datetime.now())
