@@ -1,5 +1,8 @@
 from datetime import datetime
 
+
+from typing import Final
+
 from pydantic import ValidationError
 
 from app import config
@@ -9,6 +12,9 @@ from .gameboost.models import Offer, PageData
 from .sheet.models import RowRun
 from . import logger
 from .shared.decorators import retry_on_fail
+from .utils import sleep_for
+
+DEFAULT_RELAX_TIME: Final[float] = 5
 
 
 def platten_offer(page_data: PageData) -> list[Offer]:
@@ -151,8 +157,8 @@ def run(sb, index: int) -> None:
             my_top = find_my_offer_top(offers)
             logger.info(f"My offer at top {my_top}")
             run_row.Top = str(my_top)
-            run_row.CNLGAMING_EUR = str(my_offer.local_price.amount)
-            run_row.CNLGAMING_USD = str(my_offer.price.amount)
+            run_row.CNLGAMING_EUR = str(my_offer.price.amount)
+            run_row.CNLGAMING_USD = str(my_offer.local_price.amount)
 
         else:
             logger.info("Can't find my offer")
@@ -165,6 +171,7 @@ def run(sb, index: int) -> None:
 
         run_row.Time_update = last_update_message(datetime.now())
         run_row.update()
+        sleep_for(run_row.RELAX)
 
     except ValidationError as e:
         logger.exception(f"VALIDATION ERROR AT ROW: {index}")
@@ -175,6 +182,7 @@ def run(sb, index: int) -> None:
             index=index,
             messages=f"{last_update_message(datetime.now())} VALIDATION ERROR AT ROW: {index}",
         )
+        sleep_for(DEFAULT_RELAX_TIME)
 
     except Exception as e:
         logger.exception(f"FAILED AT ROW: {index}")
@@ -185,3 +193,4 @@ def run(sb, index: int) -> None:
             index=index,
             messages=f"{last_update_message(datetime.now())} FAILED AT ROW: {index}",
         )
+        sleep_for(DEFAULT_RELAX_TIME)

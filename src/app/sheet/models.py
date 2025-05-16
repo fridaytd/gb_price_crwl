@@ -322,6 +322,12 @@ class RowRun(ColSheetModel):
             COL_META: "Q",
         },
     ]
+    RELAX: Annotated[
+        float,
+        {
+            COL_META: "R",
+        },
+    ]
 
     @staticmethod
     @retry_on_fail(max_retries=5, sleep_interval=10)
