@@ -3,6 +3,7 @@ from seleniumbase import SB
 from app.processes import run
 from app import logger, config
 from app.sheet.models import RowRun
+from app.utils import sleep_for
 
 
 def run_in_loop(sb):
@@ -15,6 +16,8 @@ def run_in_loop(sb):
             run(sb, index)
         except Exception as e:
             logger.exception(e)
+
+    sleep_for(config.RELAX_TIME_EACH_ROUND)
 
 
 def main():

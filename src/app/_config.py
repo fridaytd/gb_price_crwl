@@ -15,6 +15,8 @@ class Config(BaseModel):
 
     OUR_SELLER_NAME: str
 
+    RELAX_TIME_EACH_ROUND: float
+
     @staticmethod
     def from_env(dotenv_path: str = "settings.env") -> "Config":
         load_dotenv(dotenv_path)
